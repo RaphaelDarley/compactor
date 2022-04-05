@@ -13,10 +13,23 @@ pub fn list_to_tree( mut nodes: Vec<HuffNode> ) -> HuffNode{
     nodes.pop().unwrap()
 }
 
-pub fn tree_to_code(nodes: HuffNode) -> HashMap<char, String>{
+pub fn tree_to_code(node: HuffNode, path: Vec<TreePath>) -> HashMap<char, Vec<TreePath>>{
     let mut acc = HashMap::new();
 
+    match node.value{
+        HuffValue::Tok(tok) => acc.insert(tok, path),
+        HuffValue::Conns(conns) => {
+            acc.extend(tree_to_code(*conns.left, path.iter().chain(TreePath::Left.iter())));
+        },
+    }
+
     acc
+}
+
+impl<T> Vec<T> {
+    pub fn appended(&self, to_add: T) -> Vec<T>{
+        vec![]
+    }
 }
 
 pub fn str_to_tokfreq(txt: &str) -> Option<Vec<HuffNode>> {
@@ -39,6 +52,12 @@ pub fn str_to_tokfreq(txt: &str) -> Option<Vec<HuffNode>> {
 
 fn sort_desc_tokfreq(to_sort: Vec<HuffNode>) -> Vec<HuffNode> {
     to_sort.into_iter().sorted_by(|a, b| b.freq.cmp(&a.freq)).collect::<Vec<HuffNode>>()
+}
+
+#[derive(Debug)]
+enum TreePath {
+    Left,
+    Right,
 }
 
 #[derive(PartialEq, Eq)]
