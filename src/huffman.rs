@@ -1,6 +1,6 @@
 use crate::utils::*;
 use itertools::Itertools;
-use std::{collections::HashMap, ops::RemAssign};
+use std::collections::{HashMap, VecDeque};
 
 pub fn list_to_tree(mut nodes: Vec<HuffNode>) -> HuffNode {
     println!("{:?}", nodes);
@@ -42,30 +42,31 @@ pub fn encode(text: &str) -> (Vec<TreePath>, HuffNode) {
 
 pub fn decode(encoding: Vec<TreePath>, tree: &HuffNode) -> String {
     let mut acc = String::new();
-    let mut temp;
-    let mut remaining = encoding.as_slice();
+    let mut remaining = VecDeque::from(encoding);
 
     loop {
-        (temp, remaining) = traverse_tree(tree, remaining);
-        acc.push(temp);
-        if remaining.len() <= 1 {
+        if remaining.len() < 1 {
             break;
         }
+        acc.push(traverse_tree(tree, &mut remaining));
+        println!("{}", acc);
     }
 
     acc
 }
 
-fn traverse_tree<'a>(tree: &HuffNode, path: &'a [TreePath]) -> (char, &'a [TreePath]) {
+fn traverse_tree<'a>(tree: &HuffNode, path: &mut VecDeque<TreePath>) -> char {
+    println!("{:?}", path);
+    let step = path.pop_front();
     match &tree.value {
         HuffValue::Tok(c) => {
-            return (*c, &path[1..]);
+            return *c;
         }
         HuffValue::Conns(c) => {
             let conns = c;
-            match &path[0] {
-                TreePath::Left => traverse_tree(&*conns.left, &path[1..]),
-                TreePath::Right => traverse_tree(&*conns.right, &path[1..]),
+            match step.unwrap() {
+                TreePath::Left => traverse_tree(&*conns.left, path),
+                TreePath::Right => traverse_tree(&*conns.right, path),
             }
         }
     }

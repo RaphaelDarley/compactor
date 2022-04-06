@@ -1,7 +1,7 @@
 use compactor::*;
 
 fn main() {
-    println!("Hello, world!");
+    // println!("Hello, world!");
 
     // let test = huffman::list_to_tree(huffman::str_to_tokfreq(&"affaaaffddaaaddfdgdgddgffffddddd").unwrap());
 
@@ -13,11 +13,11 @@ fn main() {
 
     // let test = huffman::tree_to_code(test_tree, vec![]);
 
-    let (test_encode, test_tree) = huffman::encode(&"a");
+    let (test_encode, test_tree) = huffman::encode(&"aba");
 
-    println!("{:?}", test_encode);
+    println!("encoding: {:?}", test_encode);
 
     let test_decode = huffman::decode(test_encode, &test_tree);
 
-    println!("{:?}", test_decode);
+    println!("decoded: {:?}", test_decode);
 }
