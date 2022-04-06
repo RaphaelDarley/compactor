@@ -1,6 +1,6 @@
 use crate::utils::*;
 use itertools::Itertools;
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::RemAssign};
 
 pub fn list_to_tree(mut nodes: Vec<HuffNode>) -> HuffNode {
     println!("{:?}", nodes);
@@ -16,20 +16,59 @@ pub fn list_to_tree(mut nodes: Vec<HuffNode>) -> HuffNode {
     nodes.pop().unwrap()
 }
 
-pub fn tree_to_code(node: HuffNode, path: Vec<TreePath>) -> HashMap<char, Vec<TreePath>> {
+pub fn tree_to_code(node: &HuffNode, path: Vec<TreePath>) -> HashMap<char, Vec<TreePath>> {
     let mut acc = HashMap::new();
 
-    match node.value {
+    match &node.value {
         HuffValue::Tok(tok) => {
-            acc.insert(tok, path);
+            acc.insert(*tok, path);
         }
         HuffValue::Conns(conns) => {
-            acc.extend(tree_to_code(*conns.left, path.appended(TreePath::Left)));
-            acc.extend(tree_to_code(*conns.right, path.appended(TreePath::Right)));
+            acc.extend(tree_to_code(&*conns.left, path.appended(TreePath::Left)));
+            acc.extend(tree_to_code(&*conns.right, path.appended(TreePath::Right)));
+        }
+    }
+    acc
+}
+
+pub fn encode(text: &str) -> (Vec<TreePath>, HuffNode) {
+    let tree = list_to_tree(str_to_tokfreq(text).unwrap());
+    let code = tree_to_code(&tree, vec![]);
+    (
+        text.chars().map(|c| code[&c].clone()).flatten().collect(),
+        tree,
+    )
+}
+
+pub fn decode(encoding: Vec<TreePath>, tree: &HuffNode) -> String {
+    let mut acc = String::new();
+    let mut temp;
+    let mut remaining = encoding.as_slice();
+
+    loop {
+        (temp, remaining) = traverse_tree(tree, remaining);
+        acc.push(temp);
+        if remaining.len() <= 1 {
+            break;
         }
     }
 
     acc
+}
+
+fn traverse_tree<'a>(tree: &HuffNode, path: &'a [TreePath]) -> (char, &'a [TreePath]) {
+    match &tree.value {
+        HuffValue::Tok(c) => {
+            return (*c, &path[1..]);
+        }
+        HuffValue::Conns(c) => {
+            let conns = c;
+            match &path[0] {
+                TreePath::Left => traverse_tree(&*conns.left, &path[1..]),
+                TreePath::Right => traverse_tree(&*conns.right, &path[1..]),
+            }
+        }
+    }
 }
 
 pub fn str_to_tokfreq(txt: &str) -> Option<Vec<HuffNode>> {
