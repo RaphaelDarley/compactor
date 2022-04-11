@@ -3,10 +3,10 @@ use itertools::Itertools;
 use std::collections::{HashMap, VecDeque};
 
 pub fn list_to_tree(mut nodes: Vec<HuffNode>) -> HuffNode {
-    if nodes.len() == 1 {
+    if nodes.len() < 1 {
         nodes.push(HuffNode::from_tok(0 as char, 0)) // adds null node to stop empty coding with one character
     }
-    println!("{:?}", nodes);
+    println!("initial nodes: {:?}", nodes);
     loop {
         if nodes.len() < 2 {
             break;
@@ -16,6 +16,7 @@ pub fn list_to_tree(mut nodes: Vec<HuffNode>) -> HuffNode {
         let left_node = nodes.pop().unwrap();
         nodes.push(HuffNode::from_nodes(left_node, right_node));
     }
+    println!("final node: {:?}", nodes);
     nodes.pop().unwrap()
 }
 
@@ -147,6 +148,7 @@ impl HuffNode {
 mod test {
     use super::*;
     use itertools::assert_equal;
+    use rand::{self, Rng};
 
     #[test]
     fn tokfreq_check() {
@@ -168,18 +170,55 @@ mod test {
         assert_equal(res, expected);
     }
 
-    // #[test]
-    // fn test_simple_tree_build() {
-    //     let mut nodes = str_to_tokfreq(&"aaaaffddddddddddddd").unwrap();
-    //     loop{
-    //         if nodes.len() < 2 {break}
-    //         let right_node = nodes.pop().unwrap();
-    //         let left_node = nodes.pop().unwrap();
-    //         nodes.push(HuffNode::from_nodes(left_node, right_node));
-    //         nodes = sort_desc_tokfreq(nodes);
-    //     }
-    //     println!("{:?}", nodes.pop().unwrap());
-    //     let expected = HuffNode{value: HuffValue::Conns( HuffConns{left: Box } ), freq: 19}
-    //     panic!()
-    // }
+    #[test]
+    fn test_simple_tree_build() {
+        let nodes = str_to_tokfreq(&"abbb").unwrap();
+        let l_node = HuffNode::from_tok('b', 3);
+        let r_node = HuffNode::from_tok('a', 1);
+        let expected = HuffNode::from_nodes(l_node, r_node);
+        assert_eq!(list_to_tree(nodes), expected);
+    }
+
+    fn test_encode_decode(test_value: &str) {
+        let (test_encode, test_tree) = encode(&test_value);
+
+        println!("encoding: {:?}", test_encode);
+        println!("encoding: {:?}", test_tree);
+
+        let test_decode = decode(test_encode, &test_tree);
+
+        println!("decoded: {:?}", test_decode);
+        assert_eq!(test_value, test_decode)
+    }
+
+    #[test]
+    fn empty_encode_decode() {
+        test_encode_decode("");
+    }
+
+    #[test]
+    fn random_short_encode_decode() {
+        let mut rng = rand::thread_rng();
+        for _ in 0..32 {
+            let length: u8 = rng.gen();
+            let mut test_value = String::new();
+            for _ in 0..length {
+                test_value.push(rng.gen::<u8>() as char);
+            }
+            test_encode_decode(&test_value);
+        }
+    }
+
+    #[test]
+    fn random_long_encode_decode() {
+        let mut rng = rand::thread_rng();
+        for _ in 0..2 {
+            let length: u16 = 1000;
+            let mut test_value = String::new();
+            for _ in 0..length {
+                test_value.push(rng.gen::<u8>() as char);
+            }
+            test_encode_decode(&test_value);
+        }
+    }
 }
