@@ -3,6 +3,9 @@ use itertools::Itertools;
 use std::collections::{HashMap, VecDeque};
 
 pub fn list_to_tree(mut nodes: Vec<HuffNode>) -> HuffNode {
+    if nodes.len() == 1 {
+        nodes.push(HuffNode::from_tok(0 as char, 0)) // adds null node to stop empty coding with one character
+    }
     println!("{:?}", nodes);
     loop {
         if nodes.len() < 2 {
@@ -57,14 +60,13 @@ pub fn decode(encoding: Vec<TreePath>, tree: &HuffNode) -> String {
 
 fn traverse_tree<'a>(tree: &HuffNode, path: &mut VecDeque<TreePath>) -> char {
     println!("{:?}", path);
-    let step = path.pop_front();
     match &tree.value {
         HuffValue::Tok(c) => {
             return *c;
         }
         HuffValue::Conns(c) => {
             let conns = c;
-            match step.unwrap() {
+            match path.pop_front().unwrap() {
                 TreePath::Left => traverse_tree(&*conns.left, path),
                 TreePath::Right => traverse_tree(&*conns.right, path),
             }

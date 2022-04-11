@@ -13,9 +13,10 @@ fn main() {
 
     // let test = huffman::tree_to_code(test_tree, vec![]);
 
-    let (test_encode, test_tree) = huffman::encode(&"aba");
+    let (test_encode, test_tree) = huffman::encode(&"this is a test message");
 
     println!("encoding: {:?}", test_encode);
+    println!("encoding: {:?}", test_tree);
 
     let test_decode = huffman::decode(test_encode, &test_tree);
 
