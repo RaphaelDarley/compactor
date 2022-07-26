@@ -213,7 +213,7 @@ mod test {
     fn random_long_encode_decode() {
         let mut rng = rand::thread_rng();
         for _ in 0..2 {
-            let length: u16 = 1000;
+            let length: u16 = 10000;
             let mut test_value = String::new();
             for _ in 0..length {
                 test_value.push(rng.gen::<u8>() as char);
