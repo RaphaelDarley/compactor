@@ -2,11 +2,11 @@ use crate::utils::*;
 use itertools::Itertools;
 use std::collections::{HashMap, VecDeque};
 
-pub fn list_to_tree(mut nodes: Vec<HuffNode>) -> HuffNode {
+pub fn list_to_tree(mut nodes: Vec<HuffNodeFreq>) -> HuffNodeFreq {
     if nodes.len() < 1 {
-        nodes.push(HuffNode::from_tok(0 as char, 0)) // adds null node to stop empty coding with one character
+        nodes.push(HuffNodeFreq::from_tok(0 as char, 0)) // adds null node to stop empty coding with one character
     }
-    println!("initial nodes: {:?}", nodes);
+    // println!("initial nodes: {:?}", nodes);
     loop {
         if nodes.len() < 2 {
             break;
@@ -14,13 +14,13 @@ pub fn list_to_tree(mut nodes: Vec<HuffNode>) -> HuffNode {
         nodes = sort_desc_tokfreq(nodes);
         let right_node = nodes.pop().unwrap();
         let left_node = nodes.pop().unwrap();
-        nodes.push(HuffNode::from_nodes(left_node, right_node));
+        nodes.push(HuffNodeFreq::from_nodes(left_node, right_node));
     }
-    println!("final node: {:?}", nodes);
+    // println!("final node: {:?}", nodes);
     nodes.pop().unwrap()
 }
 
-pub fn tree_to_code(node: &HuffNode, path: Vec<TreePath>) -> HashMap<char, Vec<TreePath>> {
+pub fn tree_to_code(node: &HuffNodeFreq, path: Vec<TreePath>) -> HashMap<char, Vec<TreePath>> {
     let mut acc = HashMap::new();
 
     match &node.value {
@@ -35,7 +35,7 @@ pub fn tree_to_code(node: &HuffNode, path: Vec<TreePath>) -> HashMap<char, Vec<T
     acc
 }
 
-pub fn encode(text: &str) -> (Vec<TreePath>, HuffNode) {
+pub fn encode(text: &str) -> (Vec<TreePath>, HuffNodeFreq) {
     let tree = list_to_tree(str_to_tokfreq(text).unwrap());
     let code = tree_to_code(&tree, vec![]);
     (
@@ -44,7 +44,7 @@ pub fn encode(text: &str) -> (Vec<TreePath>, HuffNode) {
     )
 }
 
-pub fn decode(encoding: Vec<TreePath>, tree: &HuffNode) -> String {
+pub fn decode(encoding: Vec<TreePath>, tree: &HuffNodeFreq) -> String {
     let mut acc = String::new();
     let mut remaining = VecDeque::from(encoding);
 
@@ -53,14 +53,14 @@ pub fn decode(encoding: Vec<TreePath>, tree: &HuffNode) -> String {
             break;
         }
         acc.push(traverse_tree(tree, &mut remaining));
-        println!("{}", acc);
+        // println!("{}", acc);
     }
 
     acc
 }
 
-fn traverse_tree<'a>(tree: &HuffNode, path: &mut VecDeque<TreePath>) -> char {
-    println!("{:?}", path);
+fn traverse_tree<'a>(tree: &HuffNodeFreq, path: &mut VecDeque<TreePath>) -> char {
+    // println!("{:?}", path);
     match &tree.value {
         HuffValue::Tok(c) => {
             return *c;
@@ -75,7 +75,7 @@ fn traverse_tree<'a>(tree: &HuffNode, path: &mut VecDeque<TreePath>) -> char {
     }
 }
 
-pub fn str_to_tokfreq(txt: &str) -> Option<Vec<HuffNode>> {
+pub fn str_to_tokfreq(txt: &str) -> Option<Vec<HuffNodeFreq>> {
     let mut count_acc: HashMap<char, u32> = HashMap::new();
 
     for c in txt.chars() {
@@ -85,7 +85,7 @@ pub fn str_to_tokfreq(txt: &str) -> Option<Vec<HuffNode>> {
     let mut out_acc = vec![];
 
     for (k, v) in count_acc {
-        out_acc.push(HuffNode {
+        out_acc.push(HuffNodeFreq {
             value: HuffValue::Tok(k),
             freq: v,
         })
@@ -94,11 +94,11 @@ pub fn str_to_tokfreq(txt: &str) -> Option<Vec<HuffNode>> {
     Some(sort_desc_tokfreq(out_acc))
 }
 
-fn sort_desc_tokfreq(to_sort: Vec<HuffNode>) -> Vec<HuffNode> {
+fn sort_desc_tokfreq(to_sort: Vec<HuffNodeFreq>) -> Vec<HuffNodeFreq> {
     to_sort
         .into_iter()
         .sorted_by(|a, b| b.freq.cmp(&a.freq))
-        .collect::<Vec<HuffNode>>()
+        .collect::<Vec<HuffNodeFreq>>()
 }
 
 #[derive(Clone, Debug)]
@@ -108,7 +108,7 @@ pub enum TreePath {
 }
 
 #[derive(PartialEq, Eq, Debug)]
-pub struct HuffNode {
+pub struct HuffNodeFreq {
     pub value: HuffValue,
     pub freq: u32,
 }
@@ -121,20 +121,20 @@ pub enum HuffValue {
 
 #[derive(PartialEq, Eq, Debug)]
 pub struct HuffConns {
-    left: Box<HuffNode>,
-    right: Box<HuffNode>,
+    left: Box<HuffNodeFreq>,
+    right: Box<HuffNodeFreq>,
 }
 
-impl HuffNode {
-    pub fn from_tok(tok: char, freq: u32) -> HuffNode {
-        HuffNode {
+impl HuffNodeFreq {
+    pub fn from_tok(tok: char, freq: u32) -> HuffNodeFreq {
+        HuffNodeFreq {
             value: HuffValue::Tok(tok),
             freq,
         }
     }
-    pub fn from_nodes(left: HuffNode, right: HuffNode) -> HuffNode {
+    pub fn from_nodes(left: HuffNodeFreq, right: HuffNodeFreq) -> HuffNodeFreq {
         let combinded_freq = left.freq + right.freq;
-        HuffNode {
+        HuffNodeFreq {
             value: HuffValue::Conns(HuffConns {
                 left: Box::new(left),
                 right: Box::new(right),
@@ -154,11 +154,11 @@ mod test {
     fn tokfreq_check() {
         let res = str_to_tokfreq(&"aaaaffddddddddddddd").unwrap();
         let expected = vec![
-            HuffNode::from_tok('d', 13),
-            HuffNode::from_tok('a', 4),
-            HuffNode::from_tok('f', 2),
+            HuffNodeFreq::from_tok('d', 13),
+            HuffNodeFreq::from_tok('a', 4),
+            HuffNodeFreq::from_tok('f', 2),
         ];
-        println!("result: {:?}", res);
+        // println!("result: {:?}", res);
         assert_equal(res, expected);
     }
 
@@ -166,28 +166,28 @@ mod test {
     fn tokfreq_check_empty() {
         let res = str_to_tokfreq(&"").unwrap();
         let expected = vec![];
-        println!("result: {:?}", res);
+        // println!("result: {:?}", res);
         assert_equal(res, expected);
     }
 
     #[test]
     fn test_simple_tree_build() {
         let nodes = str_to_tokfreq(&"abbb").unwrap();
-        let l_node = HuffNode::from_tok('b', 3);
-        let r_node = HuffNode::from_tok('a', 1);
-        let expected = HuffNode::from_nodes(l_node, r_node);
+        let l_node = HuffNodeFreq::from_tok('b', 3);
+        let r_node = HuffNodeFreq::from_tok('a', 1);
+        let expected = HuffNodeFreq::from_nodes(l_node, r_node);
         assert_eq!(list_to_tree(nodes), expected);
     }
 
     fn test_encode_decode(test_value: &str) {
         let (test_encode, test_tree) = encode(&test_value);
 
-        println!("encoding: {:?}", test_encode);
-        println!("encoding: {:?}", test_tree);
+        // println!("encoding: {:?}", test_encode);
+        // println!("encoding: {:?}", test_tree);
 
         let test_decode = decode(test_encode, &test_tree);
 
-        println!("decoded: {:?}", test_decode);
+        // println!("decoded: {:?}", test_decode);
         assert_eq!(test_value, test_decode)
     }
 
@@ -213,7 +213,7 @@ mod test {
     fn random_long_encode_decode() {
         let mut rng = rand::thread_rng();
         for _ in 0..2 {
-            let length: u16 = 10000;
+            let length: u16 = 1000;
             let mut test_value = String::new();
             for _ in 0..length {
                 test_value.push(rng.gen::<u8>() as char);
